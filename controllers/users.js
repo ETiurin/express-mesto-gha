@@ -1,5 +1,20 @@
 const User = require('../models/user');
 
+const createUser = (req, res) => {
+  const { name, about, avatar } = req.body;
+
+  User.create({ name, about, avatar })
+    .then((user) => {
+      res.status(201).send({ data: user });
+    })
+    .catch((error) => {
+      if (error.name === 'ValidationError') {
+        return res.status(400).send({ message: 'Ошибка: Неверные данные' });
+      }
+      return res.status(500).send({ message: 'Ошибка по умолчанию. Сервер не отвечает' });
+    });
+};
+
 const getUsers = (req, res) => {
   User.find({})
     .then((users) => res.status(200).send({ data: users }))
@@ -20,21 +35,6 @@ const getUserById = (req, res) => {
     })
     .catch((error) => {
       if (error.name === 'CastError') {
-        return res.status(400).send({ message: 'Ошибка: Неверные данные' });
-      }
-      return res.status(500).send({ message: 'Ошибка по умолчанию. Сервер не отвечает' });
-    });
-};
-
-const createUser = (req, res) => {
-  const { name, about, avatar } = req.body;
-
-  User.create({ name, about, avatar })
-    .then((user) => {
-      res.status(201).send({ data: user });
-    })
-    .catch((error) => {
-      if (error.name === 'ValidationError') {
         return res.status(400).send({ message: 'Ошибка: Неверные данные' });
       }
       return res.status(500).send({ message: 'Ошибка по умолчанию. Сервер не отвечает' });
@@ -79,9 +79,9 @@ const editAvatar = (req, res) => {
 };
 
 module.exports = {
+  createUser,
   getUsers,
   getUserById,
-  createUser,
   editUserInfo,
   editAvatar,
 };
