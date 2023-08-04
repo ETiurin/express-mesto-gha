@@ -6,16 +6,17 @@ const getInitialCards = (req, res) => {
     .catch(() => res.status(500).send({ message: 'Ошибка по умолчанию. Сервер не отвечает' }));
 };
 
-const createNewCard = (req, res) => {
+const createCard = (req, res) => {
   const { name, link } = req.body;
+
   Card.create({ name, link, owner: req.user._id })
     .then((card) => res.status(201).send(card))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(400).send({ message: 'Переданы некорректные данные' });
-        return;
+        res.status(400).send({ message: 'Переданы некорректные данные при создании карточки.' });
+      } else {
+        res.status(500).send({ message: 'Ошибка по умолчанию. Сервер не отвечает' });
       }
-      res.status(500).send({ message: 'Ошибка по умолчанию. Сервер не отвечает' });
     });
 };
 
@@ -23,17 +24,16 @@ const deleteCard = (req, res) => {
   Card.findByIdAndDelete(req.params.cardId)
     .then((card) => {
       if (!card) {
-        res.status(404).send({ message: 'Карточка не найдена' });
-        return;
+        return res.status(404).send({ message: ' Карточка с указанным _id не найдена.' });
       }
-      res.status(200).send({ message: 'Карточка удалена' });
+      return res.status(200).send({ message: 'Карточка удалена' });
     })
     .catch((error) => {
       if (error.name === 'CastError') {
-        res.status(400).send({ message: 'Переданы некорректные данные' });
-        return;
+        return res.status(400).send({ message: 'Неверные данные' });
       }
-      res.status(500).send({ message: 'Ошибка по умолчанию. Сервер не отвечает' });
+      console.error(error);
+      return res.status(500).send({ message: 'Ошибка по умолчанию. Сервер не отвечает' });
     });
 };
 
@@ -51,10 +51,9 @@ const likeCard = (req, res) => {
     })
     .catch((error) => {
       if (error.name === 'CastError') {
-        res.status(400).send({ message: 'Переданы некорректные данные' });
-        return;
+        return res.status(400).send({ message: 'Переданы некорректные данные для постановки лайка.' });
       }
-      res.status(500).send({ message: 'Ошибка по умолчанию. Сервер не отвечает' });
+      return res.status(500).send({ message: 'Ошибка по умолчанию. Сервер не отвечает' });
     });
 };
 
@@ -72,7 +71,7 @@ const disLikeCard = (req, res) => {
     })
     .catch((error) => {
       if (error.name === 'CastError') {
-        return res.status(400).send({ message: 'Переданы некорректные данные' });
+        return res.status(400).send({ message: 'Переданы некорректные данные для снятии лайка.' });
       }
       return res.status(500).send({ message: 'Ошибка по умолчанию. Сервер не отвечает' });
     });
@@ -80,7 +79,7 @@ const disLikeCard = (req, res) => {
 
 module.exports = {
   getInitialCards,
-  createNewCard,
+  createCard,
   deleteCard,
   likeCard,
   disLikeCard,
