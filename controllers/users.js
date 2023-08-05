@@ -27,15 +27,11 @@ const getUserById = (req, res) => {
   const { userId } = req.params;
 
   User.findById(userId)
-    .then((user) => {
-      if (!user) {
-        return res.status(404).send({ message: 'Пользователь по указанному _id не найден' });
-      }
-      return res.status(200).send({ data: user });
-    })
+    .orFail(new Error('noValidId'))
+    .then((user) => res.status(200).send({ data: user }))
     .catch((error) => {
-      if (error.name === 'CastError') {
-        return res.status(400).send({ message: 'Ошибка: Неверные данные' });
+      if (error.message === 'noValidId') {
+        return res.status(404).send({ message: 'Пользователь с указанным _id не найден.' });
       }
       return res.status(500).send({ message: 'Ошибка по умолчанию. Сервер не отвечает' });
     });
