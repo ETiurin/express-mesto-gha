@@ -1,87 +1,123 @@
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const User = require('../models/user');
 
-const createUser = (req, res) => {
-  const { name, about, avatar } = req.body;
+const {
+  CREATED_OK_CODE,
+  SECRET_KEY,
+} = require('../utils/constants');
 
-  User.create({ name, about, avatar })
+const {
+  NotFoundError,
+  ConflictError,
+  BadRequestError,
+} = require('../errors');
+
+module.exports.createUser = (req, res, next) => {
+  const {
+    name, about, avatar, email, password,
+  } = req.body;
+  bcrypt.hash(password, 8)
+    .then((hash) => User.create({
+      name, about, avatar, email, password: hash,
+    }))
     .then((user) => {
-      res.status(201).send({ data: user });
+      const newUser = user.toObject();
+      delete newUser.password;
+      res.status(CREATED_OK_CODE).send({ data: newUser });
     })
     .catch((error) => {
       if (error.name === 'ValidationError') {
-        return res.status(400).send({ message: 'Ошибка: Неверные данные' });
-      }
-      return res.status(500).send({ message: 'Ошибка по умолчанию. Сервер не отвечает' });
+        next(new BadRequestError('Переданы некорректные данные при создании пользователя.'));
+      } else if (error.code === 11000) {
+        next(new ConflictError('Пользователь с таким email уже существует!'));
+      } else { next(error); }
     });
 };
 
-const getUsers = (req, res) => {
+module.exports.getUsers = (req, res, next) => {
   User.find({})
-    .then((users) => res.status(200).send({ data: users }))
-    .catch(() => {
-      res.status(500).send({ message: 'Ошибка по умолчанию. Сервер не отвечает' });
+    .then((users) => res.send({ data: users }))
+    .catch(next);
+};
+
+module.exports.getUserById = (req, res, next) => {
+  const { userId } = req.params;
+  User.findOne({ _id: userId })
+    .then((data) => {
+      if (data === null) {
+        throw new NotFoundError(`Пользователь по указанному id:${userId} не найден.`);
+      } else { res.send({ message: data }); }
+    })
+    .catch((err) => {
+      if (err.name === 'CastError') {
+        next(new BadRequestError(`Пользователь по указанному id:${userId} не найден.`));
+      } else { next(err); }
     });
 };
 
-const getUserById = (req, res) => {
-  const { userId } = req.params;
-
+module.exports.getUserInfo = (req, res, next) => {
+  const userId = req.user._id;
   User.findById(userId)
     .then((user) => {
       if (!user) {
-        return res.status(404).send({ message: 'Пользователь по указанному _id не найден' });
+        throw new NotFoundError('Пользователь не найден!');
       }
-      return res.status(200).send({ data: user });
+      res.send({ data: user });
     })
-    .catch((error) => {
-      if (error.name === 'CastError') {
-        return res.status(400).send({ message: 'Ошибка: Неверные данные' });
-      }
-      return res.status(500).send({ message: 'Ошибка по умолчанию. Сервер не отвечает' });
+    .catch((err) => {
+      if (err.name === 'CastError') {
+        next(new BadRequestError('Некорректный id пользователя!'));
+      } else { next(err); }
     });
 };
 
-const editUserInfo = (req, res) => {
+module.exports.editUserInfo = (req, res, next) => {
+  const owner = req.user._id;
   const { name, about } = req.body;
-  User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
-    .then((user) => {
-      if (!user) {
-        return res.status(404).send({ message: ' Переданы некорректные данные при обновлении профиля.' });
-      }
-      return res.status(200).send({ data: user });
-    })
-    .catch((error) => {
-      if (error.name === 'ValidationError') {
-        return res.status(400).send({ message: 'Пользователь с указанным _id не найден.' });
-      }
-      return res.status(500).send({ message: 'Ошибка по умолчанию. Сервер не отвечает' });
+  User.findOneAndUpdate(
+    { _id: owner },
+    { $set: { name, about } },
+    { new: true, runValidators: true },
+  )
+    .then((user) => res.send({ data: user }))
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        next(new BadRequestError({ message: 'Переданы некорректные данные при обновлении профиля.' }));
+      } else if (err.name === 'CastError') {
+        next(new NotFoundError({ message: `Пользователь c указанным id:${owner} не найден.` }));
+      } else { next(err); }
     });
 };
 
-const editAvatar = (req, res) => {
+module.exports.editAvatar = (req, res, next) => {
+  const owner = req.user._id;
   const { avatar } = req.body;
-  if (!avatar) {
-    res.status(400).send({ message: ' Переданы некорректные данные при обновлении аватара.' });
-  }
-  User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
-    .then((user) => {
-      if (!user) {
-        return res.status(404).send({ message: 'Пользователь с указанным _id не найден.' });
-      }
-      return res.status(200).send({ data: user });
-    })
-    .catch((error) => {
-      if (error.name === 'ValidationError') {
-        return res.status(400).send({ message: 'Ошибка: Неверные данные.' });
-      }
-      return res.status(500).send({ message: 'Ошибка по умолчанию. Сервер не отвечает' });
+  User.findOneAndUpdate(
+    { _id: owner },
+    { $set: { avatar } },
+    { new: true, runValidators: true },
+  )
+    .then((data) => res.send({ data }))
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        next(new BadRequestError({ message: 'Переданы некорректные данные при обновлении аватара.' }));
+      } else if (err.name === 'CastError') {
+        next(new NotFoundError({ message: `Пользователь с указанным id:${owner} не найден.` }));
+      } else { next(err); }
     });
 };
 
-module.exports = {
-  createUser,
-  getUsers,
-  getUserById,
-  editUserInfo,
-  editAvatar,
+module.exports.login = (req, res, next) => {
+  const { email, password } = req.body;
+  User.findUserByCredentials(email, password)
+    .then((user) => {
+      const token = jwt.sign(
+        { _id: user._id },
+        SECRET_KEY,
+        { expiresIn: '7d' },
+      );
+      res.cookie('authorization', token, { maxAge: 3600000 * 24 * 7, httpOnly: true }).send({ message: 'Авторизация успешна!' });
+    })
+    .catch(next);
 };
