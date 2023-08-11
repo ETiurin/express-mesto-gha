@@ -80,7 +80,7 @@ const getUserInfo = (req, res, next) => {
 const editUserInfo = (req, res, next) => {
   const { name, about } = req.body;
   User.findOneAndUpdate(
-    req.user._id,
+    { _id: req.user._id },
     { name, about },
     {
       new: true,
