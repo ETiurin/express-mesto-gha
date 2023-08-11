@@ -19,10 +19,10 @@ module.exports.createCard = (req, res, next) => {
   const { name, link } = req.body;
   Card.create({ name, link, owner })
     .then((card) => res.status(CREATED_OK_CODE).send({ data: card }))
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
+    .catch((error) => {
+      if (error.name === 'ValidationError') {
         next(new BadRequestError('Переданы некорректные данные при создании карточки.'));
-      } else { next(err); }
+      } else { next(error); }
     });
 };
 
@@ -32,21 +32,21 @@ module.exports.deleteCardById = (req, res, next) => {
   Card.findById(cardId)
     .then((card) => {
       if (card.owner.toString() === userId) {
-        Card.findByIdAndDelete(cardId)
+        Card.deleteOne({ _id: cardId })
           .then((deleteCardById) => {
             if (deleteCardById === null) {
               throw new NotFoundError(`Карточка с указанным _id: ${cardId} не найдена.`);
-            } else { res.send({ message: deleteCardById }); }
+            } else { res.send({ message: 'Карточка удалена.' }); }
           });
-      } else { throw new ForbiddenError('Доступ запрещен!'); }
+      } else { throw new ForbiddenError('Доступ запрещен.'); }
     })
-    .catch((err) => {
-      console.log(err);
-      if (err.name === 'CastError') {
+    .catch((error) => {
+      console.log(error);
+      if (error.name === 'CastError') {
         next(new BadRequestError('Переданы некорректные данные при удалении карточки.'));
-      } else if (err.name === 'TypeError') {
+      } else if (error.name === 'TypeError') {
         next(new NotFoundError(`Карточка с указанным _id: ${cardId} не найдена.`));
-      } else { next(err); }
+      } else { next(error); }
     });
 };
 
@@ -61,10 +61,10 @@ module.exports.likeCard = (req, res, next) => {
         throw new NotFoundError('Передан несуществующий _id карточки.');
       } else { res.send({ data: card }); }
     })
-    .catch((err) => {
-      if (err.name === 'ValidationError' || err.name === 'CastError') {
+    .catch((error) => {
+      if (error.name === 'ValidationError' || error.name === 'CastError') {
         next(new BadRequestError('Переданы некорректные данные для постановки лайка.'));
-      } else { next(err); }
+      } else { next(error); }
     });
 };
 

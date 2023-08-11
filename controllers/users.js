@@ -1,12 +1,10 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const User = require('../models/user');
-
 const {
   CREATED_OK_CODE,
   SECRET_KEY,
 } = require('../utils/constants');
-
 const {
   NotFoundError,
   ConflictError,
