@@ -108,7 +108,7 @@ const editUserInfo = (req, res, next) => {
 const editAvatar = (req, res, next) => {
   const { avatar } = req.body;
   User.findOneAndUpdate(
-    req.user._id,
+    { _id: req.user._id },
     { avatar },
     {
       new: true,
