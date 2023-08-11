@@ -16,7 +16,6 @@ const cardSchema = new mongoose.Schema(
         validator(value) {
           return validator.isURL(value);
         },
-        message: 'Некорректный URL',
       },
     },
     owner: {
@@ -34,7 +33,6 @@ const cardSchema = new mongoose.Schema(
       default: Date.now,
     },
   },
-  { versionKey: false },
 );
 
 module.exports = mongoose.model('card', cardSchema);

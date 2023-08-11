@@ -1,5 +1,4 @@
 const router = require('express').Router();
-
 const {
   getCards,
   createCard,
@@ -7,7 +6,6 @@ const {
   likeCard,
   disLikeCard,
 } = require('../controllers/cards');
-
 const { cardIdValidation, createCardValidation } = require('../middlewares/validations');
 
 router.get('/', getCards);
