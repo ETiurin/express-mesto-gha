@@ -7,7 +7,7 @@ const { errors } = require('celebrate');
 const rateLimit = require('express-rate-limit');
 const { loginValidation, createUserValidation } = require('./middlewares/validations');
 const auth = require('./middlewares/auth');
-const NotFoundError = require('./errors/notFoundError');
+const NotFoundError = require('./errors/NotFoundError');
 const { login, createUser } = require('./controllers/users');
 const errorHandler = require('./middlewares/errorHandler');
 
