@@ -4,6 +4,7 @@ const UnauthorizedError = require('../errors/UnauthorizedError');
 const { SECRET_KEY } = require('../utils/constants');
 
 module.exports = (req, res, next) => {
+  console.log(UnauthorizedError);
   if (!req.cookies.jwt) {
     throw new UnauthorizedError('Ошибка авторизации.');
   }
